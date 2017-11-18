@@ -4,6 +4,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
@@ -16,6 +17,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
+import org.opencv.photo.Photo;
 import org.opencv.videoio.VideoCapture;
 
 import javafx.event.Event;
@@ -72,6 +74,7 @@ public class FaceDetectionController {
 	private Mat head;
 	private Mat spotImage;
 	private Mat spot2Image;
+	private boolean gates = false;
 
 	/**
 	 * Init the controller, at start time
@@ -94,9 +97,47 @@ public class FaceDetectionController {
 	@FXML
 	protected void godoGates() {
 		stopAcquisition();
-		Mat orig_image = Imgcodecs.imread("resources/thegates.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
 
+		Mat userHead = new Mat();
+		head.copyTo(userHead);
+		Utils.DisplayImage("userhead", userHead);
+
+		Mat mask = Mat.ones(head.rows(), head.cols(), head.depth());
+		Core.multiply(mask, new Scalar(255), mask);
+
+		// Mat.ones(head.size(), CvType.CV_8UC1);
+		Utils.DisplayImage("mask", mask);
+		Mat orig_image = Imgcodecs.imread("resources/thegates.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
+		Imgproc.resize(orig_image, orig_image, new Size(), 3, 3, Imgproc.INTER_AREA);
+		gates = true;
 		detectAndDisplay(orig_image);
+
+		Utils.DisplayImage("gates", orig_image);
+
+//		Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2, roi.tl().y + (roi.br().y - roi.tl().y) / 2);
+
+		// Point center = new Point(orig_image.cols() / 2, orig_image.rows() / 2);
+		Mat output = new Mat();
+
+		Photo.seamlessClone(userHead, orig_image, mask, faceCenter, output, Photo.NORMAL_CLONE);
+
+		head = output;
+		Utils.DisplayImage("gates", output);
+
+		// // Clone seamlessly.
+		// Rect r = userHead;
+		// Point center = (r.tl() + r.br()) / 2;
+		//
+		// Mat output;
+		// img1Warped.convertTo(img1Warped, Imgcodecs.CV_8UC3);
+		// seamlessClone(img1Warped,img2, mask, center, output, NORMAL_CLONE);
+		//
+		// imshow("Face Swapped", output);
+		// waitKey(0);
+		// destroyAllWindows();
+		// Imgproc.seem
+
+		// detectAndDisplay(orig_image);
 
 		// grab a frame every 33 ms (30 frames/sec)
 		Runnable frameGrabber = new Runnable() {
@@ -267,6 +308,7 @@ public class FaceDetectionController {
 
 			// get center of face
 			Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2, roi.tl().y + (roi.br().y - roi.tl().y) / 2);
+			faceCenter = center;
 			Mat mask = Mat.zeros(frame.size(), CvType.CV_8UC1);
 
 			// Draw the ellipse using a solid white fill
@@ -276,9 +318,12 @@ public class FaceDetectionController {
 			Mat x = new Mat();
 			frame.copyTo(x, mask);
 			spotImage = x.submat(roi);
+
 		}
 
 	}
+
+	private Point faceCenter;
 
 	/**
 	 * The action triggered by selecting the Haar Classifier checkbox. It loads the trained set to be used for frontal face detection.
