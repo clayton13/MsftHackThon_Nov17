@@ -2,6 +2,7 @@ package cvfacial;
 
 import java.io.Console;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -124,7 +125,7 @@ public class FaceDetectionController {
 		stopAcquisition();
 
 		Mat userImg = new Mat();
-		spotImage.copyTo(userImg);
+		head.copyTo(userImg);
 
 		userImg = equalizeIntensity(userImg);
 		Mat orig_image = Imgcodecs.imread("resources/thegates.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
@@ -137,26 +138,38 @@ public class FaceDetectionController {
 		detectAndDisplay(orig_image);
 
 		userImg = scaleMat(spotImage, userImg);
+//		Utils.DisplayImage("mixed32", userImg);
+//		Utils.DisplayImage("mixed32", spotImage);
 		// Imgproc.resize(orig_image, orig_image, orig_image.size(), 3, 3, Imgproc.INTER_AREA);
 
 		// Create an all white mask
+		Mat out;
+		Mat in[] = {userMask, userMask, userMask};
+		
+//		Core.merge(Arrays.asList(in), src_mask);
+		
 		Mat src_mask = Mat.ones(userImg.rows(), userImg.cols(), userImg.depth());
-		Core.multiply(src_mask, new Scalar(255), src_mask);
 
+//		Core.merge(Arrays.asList(in), src_mask);
+		Core.multiply(src_mask, new Scalar(255), src_mask);
+//		Utils.DisplayImage("asdfasdfsdafads", src_mask);
+//		src_mask.submat)
 		// Photo.illuminationChange(, mask, result, 0.2f, 0.4f);
 
 		// The location of the center of the src in the dst
-		// Point center(dst.cols/2,dst.rows/2);
+//		 Point center(dst.cols/2,dst.rows/2);
 
 		// // Seamlessly clone src into dst and put the results in output
 		// Mat normal_clone;
 		Mat mixed_clone = new Mat();
 
 		// Photo.seamlessClone(userImg, dst, src_mask, gatesCenter, normal_clone, Photo);
-		Photo.seamlessClone(userImg, orig_image, src_mask, gatesCenter, mixed_clone, Photo.MIXED_CLONE | Photo.RECURS_FILTER);
+		Photo.seamlessClone(userImg, orig_image, src_mask, gatesCenter, mixed_clone, Photo.MIXED_CLONE);
 
-		Utils.DisplayImage("mixed", mixed_clone);
+//		Utils.DisplayImage("mixed", mixed_clone);
 		bill = false;
+		
+		spot2Image =mixed_clone;
 		// grab a frame every 33 ms (30 frames/sec)
 		Runnable frameGrabber = new Runnable() {
 
@@ -164,7 +177,9 @@ public class FaceDetectionController {
 			public void run() {
 				// effectively grab and process a single frame
 				Mat frame = grabFrame();
-
+if(!bill){
+	frame = spot2Image;
+}
 				// convert and show the frame
 				Image imageToShow = Utils.mat2Image(frame);
 				updateImageView(originalFrame, imageToShow);
@@ -352,8 +367,12 @@ public class FaceDetectionController {
 			// Draw the ellipse using a solid white fill
 			RotatedRect rr = new RotatedRect(center, new Size(roi.width * .8, roi.height), 0);
 			Imgproc.ellipse(mask, rr, new Scalar(255, 255, 255), -1);
-
+if(!bill){
+	userMask =  mask.submat(roi);;
+}
 			if (bill) {
+				
+				
 				System.out.println(Core.mean(spotImage));
 				Scalar ss = Core.mean(frame, mask);
 				Scalar s = new Scalar(ss.val[0], ss.val[1], ss.val[2]);
@@ -377,6 +396,7 @@ public class FaceDetectionController {
 	}
 
 	private static Point gatesCenter;
+	private static Mat userMask;
 
 	/**
 	 * The action triggered by selecting the Haar Classifier checkbox. It loads the trained set to be used for frontal face detection.
