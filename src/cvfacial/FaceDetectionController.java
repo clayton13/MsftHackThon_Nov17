@@ -151,6 +151,8 @@ public class FaceDetectionController {
 		return newMat;
 	}
 
+
+
 	/**
 	 * The action triggered by pushing the button on the GUI
 	 */
@@ -301,6 +303,15 @@ public class FaceDetectionController {
 			frame.copyTo(x, mask);
 			spotImage = x.submat(roi);
 		}
+
+
+
+		Mat orig_image = Imgcodecs.imread("res/person1.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
+		Mat newface = new Mat();
+		newface = scaleMat(orig_image, faces);
+		spotImage = newface;
+		spot2Image = orig_image;
+
 
 	}
 
