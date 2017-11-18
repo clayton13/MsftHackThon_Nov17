@@ -12,6 +12,7 @@ import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
@@ -48,6 +49,8 @@ public class FaceDetectionController {
 	private ImageView spot2;
 	@FXML
 	private ImageView spot3;
+	@FXML
+	private Button doGates;
 
 	// checkboxes for enabling/disabling a classifier
 	@FXML
@@ -83,9 +86,47 @@ public class FaceDetectionController {
 		// preserve image ratio
 		originalFrame.setPreserveRatio(true);
 
-		face.fitHeightProperty().bind(grid1.heightProperty().divide(3.1));
-		spot2.fitHeightProperty().bind(grid1.heightProperty().divide(3.1));
-		spot3.fitHeightProperty().bind(grid1.heightProperty().divide(3.1));
+		face.fitHeightProperty().bind(grid1.heightProperty().divide(4.1));
+		spot2.fitHeightProperty().bind(grid1.heightProperty().divide(4.1));
+		spot3.fitHeightProperty().bind(grid1.heightProperty().divide(4.1));
+	}
+
+	@FXML
+	protected void godoGates() {
+		stopAcquisition();
+		Mat orig_image = Imgcodecs.imread("resources/thegates.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
+
+		detectAndDisplay(orig_image);
+
+		// grab a frame every 33 ms (30 frames/sec)
+		Runnable frameGrabber = new Runnable() {
+
+			@Override
+			public void run() {
+				// effectively grab and process a single frame
+				Mat frame = grabFrame();
+
+				// convert and show the frame
+				Image imageToShow = Utils.mat2Image(frame);
+				updateImageView(originalFrame, imageToShow);
+
+				imageToShow = Utils.mat2Image(head);
+				updateImageView(face, imageToShow);
+
+				// spotImage = head;
+				imageToShow = Utils.mat2Image(spotImage);
+				updateImageView(spot2, imageToShow);
+
+				spot2Image = head;
+				imageToShow = Utils.mat2Image(spot2Image);
+				updateImageView(spot3, imageToShow);
+
+			}
+		};
+
+		this.timer = Executors.newSingleThreadScheduledExecutor();
+		this.timer.execute(frameGrabber);
+
 	}
 
 	/**
