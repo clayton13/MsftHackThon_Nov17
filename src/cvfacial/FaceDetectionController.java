@@ -28,8 +28,10 @@ import javafx.scene.layout.GridPane;
 import utils.Utils;
 
 /**
- * The controller associated with the only view of our application. The application logic is implemented here. It handles the button for
- * starting/stopping the camera, the acquired video stream, the relative controls and the face detection/tracking.
+ * The controller associated with the only view of our application. The
+ * application logic is implemented here. It handles the button for
+ * starting/stopping the camera, the acquired video stream, the relative
+ * controls and the face detection/tracking.
  *
  * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
  * @version 1.1 (2015-11-10)
@@ -117,7 +119,7 @@ public class FaceDetectionController {
 				imageToShow = Utils.mat2Image(spotImage);
 				updateImageView(spot2, imageToShow);
 
-				spot2Image = head;
+				// spot2Image = head;
 				imageToShow = Utils.mat2Image(spot2Image);
 				updateImageView(spot3, imageToShow);
 
@@ -127,6 +129,26 @@ public class FaceDetectionController {
 		this.timer = Executors.newSingleThreadScheduledExecutor();
 		this.timer.execute(frameGrabber);
 
+	}
+
+	/**
+	 * 2:36am - Chase
+	 *
+	 * @param srcMat
+	 *            Use matrix of image with wanted crop size
+	 * @param oldMat
+	 *            Use matrix of image that you want to crop
+	 * @return newMat Returns resized matrix
+	 */
+
+	protected Mat scaleMat(Mat srcMat, Mat oldMat) {
+		Mat newMat = new Mat();
+		Size matSize = new Size();
+		matSize.height = srcMat.height();
+		matSize.width = srcMat.width();
+		Imgproc.resize(oldMat, newMat, matSize);
+
+		return newMat;
 	}
 
 	/**
@@ -165,7 +187,7 @@ public class FaceDetectionController {
 						imageToShow = Utils.mat2Image(spotImage);
 						updateImageView(spot2, imageToShow);
 
-						spot2Image = head;
+						// spot2Image = head;
 						imageToShow = Utils.mat2Image(spot2Image);
 						updateImageView(spot3, imageToShow);
 
@@ -251,7 +273,8 @@ public class FaceDetectionController {
 
 		// detect faces
 
-		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE, new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
+		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
+				new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
 
 		// each rectangle in faces is a face: draw them!
 
@@ -266,7 +289,8 @@ public class FaceDetectionController {
 			head = contourRegion;
 
 			// get center of face
-			Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2, roi.tl().y + (roi.br().y - roi.tl().y) / 2);
+			Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2,
+					roi.tl().y + (roi.br().y - roi.tl().y) / 2);
 			Mat mask = Mat.zeros(frame.size(), CvType.CV_8UC1);
 
 			// Draw the ellipse using a solid white fill
@@ -281,7 +305,8 @@ public class FaceDetectionController {
 	}
 
 	/**
-	 * The action triggered by selecting the Haar Classifier checkbox. It loads the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the Haar Classifier checkbox. It loads
+	 * the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void haarSelected(Event event) {
@@ -294,7 +319,8 @@ public class FaceDetectionController {
 	}
 
 	/**
-	 * The action triggered by selecting the LBP Classifier checkbox. It loads the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the LBP Classifier checkbox. It loads
+	 * the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void lbpSelected(Event event) {
@@ -339,6 +365,7 @@ public class FaceDetectionController {
 			this.capture.release();
 
 			Utils.saveImg("output", spotImage);
+
 		}
 	}
 
