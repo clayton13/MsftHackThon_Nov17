@@ -1,9 +1,12 @@
 package cvfacial;
 
+import java.io.Console;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
@@ -16,6 +19,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
+import org.opencv.photo.Photo;
 import org.opencv.videoio.VideoCapture;
 
 import javafx.event.Event;
@@ -28,10 +32,8 @@ import javafx.scene.layout.GridPane;
 import utils.Utils;
 
 /**
- * The controller associated with the only view of our application. The
- * application logic is implemented here. It handles the button for
- * starting/stopping the camera, the acquired video stream, the relative
- * controls and the face detection/tracking.
+ * The controller associated with the only view of our application. The application logic is implemented here. It handles the button for
+ * starting/stopping the camera, the acquired video stream, the relative controls and the face detection/tracking.
  *
  * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
  * @version 1.1 (2015-11-10)
@@ -93,13 +95,68 @@ public class FaceDetectionController {
 		spot3.fitHeightProperty().bind(grid1.heightProperty().divide(4.1));
 	}
 
+	public static Mat equalizeIntensity(Mat inputImage) {
+		if (inputImage.channels() >= 3) {
+			Mat ycrcb = new Mat();
+
+			Imgproc.cvtColor(inputImage, ycrcb, Imgproc.COLOR_BGR2YCrCb);
+
+			ArrayList<Mat> channels = new ArrayList<>();
+			Core.split(ycrcb, channels);
+
+			Imgproc.equalizeHist(channels.get(0), channels.get(0));
+
+			Mat result = new Mat();
+
+			Core.merge(channels, ycrcb);
+
+			Imgproc.cvtColor(ycrcb, result, Imgproc.COLOR_YCrCb2BGR);
+
+			return result;
+		}
+		return new Mat();
+	}
+
+	static boolean bill = false;
+
 	@FXML
 	protected void godoGates() {
 		stopAcquisition();
+
+		Mat userImg = new Mat();
+		spotImage.copyTo(userImg);
+
+		userImg = equalizeIntensity(userImg);
 		Mat orig_image = Imgcodecs.imread("resources/thegates.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
 
+		Size matSize = new Size();
+		matSize.height = 2 * orig_image.height();
+		matSize.width = 2 * orig_image.width();
+		Imgproc.resize(orig_image, orig_image, matSize);
+		bill = true;
 		detectAndDisplay(orig_image);
 
+		userImg = scaleMat(spotImage, userImg);
+		// Imgproc.resize(orig_image, orig_image, orig_image.size(), 3, 3, Imgproc.INTER_AREA);
+
+		// Create an all white mask
+		Mat src_mask = Mat.ones(userImg.rows(), userImg.cols(), userImg.depth());
+		Core.multiply(src_mask, new Scalar(255), src_mask);
+
+		// Photo.illuminationChange(, mask, result, 0.2f, 0.4f);
+
+		// The location of the center of the src in the dst
+		// Point center(dst.cols/2,dst.rows/2);
+
+		// // Seamlessly clone src into dst and put the results in output
+		// Mat normal_clone;
+		Mat mixed_clone = new Mat();
+
+		// Photo.seamlessClone(userImg, dst, src_mask, gatesCenter, normal_clone, Photo);
+		Photo.seamlessClone(userImg, orig_image, src_mask, gatesCenter, mixed_clone, Photo.MIXED_CLONE | Photo.RECURS_FILTER);
+
+		Utils.DisplayImage("mixed", mixed_clone);
+		bill = false;
 		// grab a frame every 33 ms (30 frames/sec)
 		Runnable frameGrabber = new Runnable() {
 
@@ -150,8 +207,6 @@ public class FaceDetectionController {
 
 		return newMat;
 	}
-
-
 
 	/**
 	 * The action triggered by pushing the button on the GUI
@@ -275,14 +330,13 @@ public class FaceDetectionController {
 
 		// detect faces
 
-		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
-				new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
+		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE, new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
 
 		// each rectangle in faces is a face: draw them!
 
 		Rect[] facesArray = faces.toArray();
 		for (int i = 0; i < facesArray.length; i++) {
-			Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
+			// Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
 
 			// Roi is bounding box of face
 			Rect roi = facesArray[i];
@@ -291,33 +345,41 @@ public class FaceDetectionController {
 			head = contourRegion;
 
 			// get center of face
-			Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2,
-					roi.tl().y + (roi.br().y - roi.tl().y) / 2);
+			Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2, roi.tl().y + (roi.br().y - roi.tl().y) / 2);
+			gatesCenter = center;
 			Mat mask = Mat.zeros(frame.size(), CvType.CV_8UC1);
 
 			// Draw the ellipse using a solid white fill
 			RotatedRect rr = new RotatedRect(center, new Size(roi.width * .8, roi.height), 0);
 			Imgproc.ellipse(mask, rr, new Scalar(255, 255, 255), -1);
 
+			if (bill) {
+				System.out.println(Core.mean(spotImage));
+				Scalar ss = Core.mean(frame, mask);
+				Scalar s = new Scalar(ss.val[0], ss.val[1], ss.val[2]);
+				Imgproc.ellipse(frame, rr, s, -1);
+				Utils.DisplayImage("adsf", frame);
+
+			}
+
 			Mat x = new Mat();
 			frame.copyTo(x, mask);
 			spotImage = x.submat(roi);
+
 		}
 
-
-
-		Mat orig_image = Imgcodecs.imread("res/person1.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
-		Mat newface = new Mat();
-		newface = scaleMat(orig_image, faces);
-		spotImage = newface;
-		spot2Image = orig_image;
-
+		// Mat orig_image = Imgcodecs.imread("res/person1.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
+		// Mat newface = new Mat();
+		// newface = scaleMat(orig_image, faces);
+		// spotImage = newface;
+		// spot2Image = orig_image;
 
 	}
 
+	private static Point gatesCenter;
+
 	/**
-	 * The action triggered by selecting the Haar Classifier checkbox. It loads
-	 * the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the Haar Classifier checkbox. It loads the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void haarSelected(Event event) {
@@ -330,8 +392,7 @@ public class FaceDetectionController {
 	}
 
 	/**
-	 * The action triggered by selecting the LBP Classifier checkbox. It loads
-	 * the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the LBP Classifier checkbox. It loads the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void lbpSelected(Event event) {
