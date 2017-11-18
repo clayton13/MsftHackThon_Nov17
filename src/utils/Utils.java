@@ -1,7 +1,16 @@
 package utils;
 
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.File;
+
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 import org.opencv.core.Mat;
 
@@ -86,4 +95,28 @@ public final class Utils
 		
 		return image;
 	}
+	
+	
+	public static void saveImg(String path, Mat arg) {
+		BufferedImage img;
+		try {
+			// Create an empty image in matching format
+			img = new BufferedImage(arg.width(), arg.height(), BufferedImage.TYPE_3BYTE_BGR);
+			System.out.println(arg.channels());
+			// Get the BufferedImage's backing array and copy the pixels
+			// directly into it
+			byte[] data = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+			arg.get(0, 0, data);
+		
+			BufferedImage i = Utils.matToBufferedImage(arg.clone());
+
+			File outputfile = new File(path + ".png");
+			ImageIO.write(i, "png", outputfile);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 }

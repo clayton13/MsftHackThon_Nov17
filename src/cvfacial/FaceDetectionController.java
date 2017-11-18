@@ -1,6 +1,5 @@
 package cvfacial;
 
-import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -8,7 +7,9 @@ import java.util.concurrent.TimeUnit;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -26,25 +27,13 @@ import javafx.scene.layout.GridPane;
 import utils.Utils;
 
 /**
- * <<<<<<< HEAD The controller associated with the only view of our application.
- * The application logic is implemented here. It handles the button for
- * starting/stopping the camera, the acquired video stream, the relative
- * controls and the face detection/tracking.
+ * The controller associated with the only view of our application. The application logic is implemented here. It handles the button for
+ * starting/stopping the camera, the acquired video stream, the relative controls and the face detection/tracking.
  *
  * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
  * @version 1.1 (2015-11-10)
  * @since 1.0 (2014-01-10)
  *
- *        ======= The controller associated with the only view of our
- *        application. The application logic is implemented here. It handles the
- *        button for starting/stopping the camera, the acquired video stream,
- *        the relative controls and the face detection/tracking.
- *
- * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
- * @version 1.1 (2015-11-10)
- * @since 1.0 (2014-01-10)
- *
- *        >>>>>>> ce3ccb9fd9b64ef43233436a56d82ae9bb05fe02
  */
 public class FaceDetectionController {
 	// FXML buttons
@@ -131,7 +120,7 @@ public class FaceDetectionController {
 						imageToShow = Utils.mat2Image(head);
 						updateImageView(face, imageToShow);
 
-						spotImage = head;
+						// spotImage = head;
 						imageToShow = Utils.mat2Image(spotImage);
 						updateImageView(spot2, imageToShow);
 
@@ -221,8 +210,7 @@ public class FaceDetectionController {
 
 		// detect faces
 
-		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
-				new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
+		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE, new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
 
 		// each rectangle in faces is a face: draw them!
 
@@ -230,18 +218,29 @@ public class FaceDetectionController {
 		for (int i = 0; i < facesArray.length; i++) {
 			Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
 
-			// Create bounding box of cnt
+			// Roi is bounding box of face
 			Rect roi = facesArray[i];
+			// get region of face only
 			Mat contourRegion = frame.submat(roi);
-
 			head = contourRegion;
+
+			// get center of face
+			Point center = new Point(roi.tl().x + (roi.br().x - roi.tl().x) / 2, roi.tl().y + (roi.br().y - roi.tl().y) / 2);
+			Mat mask = Mat.zeros(frame.size(), CvType.CV_8UC1);
+
+			// Draw the ellipse using a solid white fill
+			RotatedRect rr = new RotatedRect(center, new Size(roi.width * .8, roi.height), 0);
+			Imgproc.ellipse(mask, rr, new Scalar(255, 255, 255), -1);
+
+			Mat x = new Mat();
+			frame.copyTo(x, mask);
+			spotImage = x.submat(roi);
 		}
 
 	}
 
 	/**
-	 * The action triggered by selecting the Haar Classifier checkbox. It loads
-	 * the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the Haar Classifier checkbox. It loads the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void haarSelected(Event event) {
@@ -254,8 +253,7 @@ public class FaceDetectionController {
 	}
 
 	/**
-	 * The action triggered by selecting the LBP Classifier checkbox. It loads
-	 * the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the LBP Classifier checkbox. It loads the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void lbpSelected(Event event) {
@@ -298,6 +296,8 @@ public class FaceDetectionController {
 		if (this.capture.isOpened()) {
 			// release the camera
 			this.capture.release();
+
+			Utils.saveImg("output", spotImage);
 		}
 	}
 
