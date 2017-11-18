@@ -26,9 +26,8 @@ import javafx.scene.layout.GridPane;
 import utils.Utils;
 
 /**
-<<<<<<< HEAD
- * The controller associated with the only view of our application. The
- * application logic is implemented here. It handles the button for
+ * <<<<<<< HEAD The controller associated with the only view of our application.
+ * The application logic is implemented here. It handles the button for
  * starting/stopping the camera, the acquired video stream, the relative
  * controls and the face detection/tracking.
  *
@@ -36,15 +35,16 @@ import utils.Utils;
  * @version 1.1 (2015-11-10)
  * @since 1.0 (2014-01-10)
  *
-=======
- * The controller associated with the only view of our application. The application logic is implemented here. It handles the button for
- * starting/stopping the camera, the acquired video stream, the relative controls and the face detection/tracking.
+ *        ======= The controller associated with the only view of our
+ *        application. The application logic is implemented here. It handles the
+ *        button for starting/stopping the camera, the acquired video stream,
+ *        the relative controls and the face detection/tracking.
  *
  * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
  * @version 1.1 (2015-11-10)
  * @since 1.0 (2014-01-10)
  *
->>>>>>> ce3ccb9fd9b64ef43233436a56d82ae9bb05fe02
+ *        >>>>>>> ce3ccb9fd9b64ef43233436a56d82ae9bb05fe02
  */
 public class FaceDetectionController {
 	// FXML buttons
@@ -80,7 +80,6 @@ public class FaceDetectionController {
 	private Mat head;
 	private Mat spotImage;
 	private Mat spot2Image;
-
 
 	/**
 	 * Init the controller, at start time
@@ -124,7 +123,6 @@ public class FaceDetectionController {
 					public void run() {
 						// effectively grab and process a single frame
 						Mat frame = grabFrame();
-
 
 						// convert and show the frame
 						Image imageToShow = Utils.mat2Image(frame);
@@ -187,7 +185,6 @@ public class FaceDetectionController {
 					this.detectAndDisplay(frame);
 				}
 
-
 			} catch (Exception e) {
 				// log the (full) error
 				System.err.println("Exception during the image elaboration: " + e);
@@ -224,7 +221,8 @@ public class FaceDetectionController {
 
 		// detect faces
 
-		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE, new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
+		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
+				new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
 
 		// each rectangle in faces is a face: draw them!
 
@@ -242,7 +240,8 @@ public class FaceDetectionController {
 	}
 
 	/**
-	 * The action triggered by selecting the Haar Classifier checkbox. It loads the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the Haar Classifier checkbox. It loads
+	 * the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void haarSelected(Event event) {
@@ -251,11 +250,12 @@ public class FaceDetectionController {
 			this.lbpClassifier.setSelected(false);
 
 		this.checkboxSelection("resources/haarcascades/haarcascade_frontalface_alt.xml");
-		//this.checkboxSelection("res/haarcascade_eye.xml");
+		// this.checkboxSelection("res/haarcascade_eye.xml");
 	}
 
 	/**
-	 * The action triggered by selecting the LBP Classifier checkbox. It loads the trained set to be used for frontal face detection.
+	 * The action triggered by selecting the LBP Classifier checkbox. It loads
+	 * the trained set to be used for frontal face detection.
 	 */
 	@FXML
 	protected void lbpSelected(Event event) {
@@ -294,7 +294,6 @@ public class FaceDetectionController {
 				System.err.println("Exception in stopping the frame capture, trying to release the camera now... " + e);
 			}
 		}
-
 
 		if (this.capture.isOpened()) {
 			// release the camera
