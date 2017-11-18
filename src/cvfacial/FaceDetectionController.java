@@ -27,11 +27,11 @@ import utils.Utils;
  * application logic is implemented here. It handles the button for
  * starting/stopping the camera, the acquired video stream, the relative
  * controls and the face detection/tracking.
- * 
+ *
  * @author <a href="mailto:luigi.derussis@polito.it">Luigi De Russis</a>
  * @version 1.1 (2015-11-10)
  * @since 1.0 (2014-01-10)
- * 		
+ *
  */
 public class FaceDetectionController
 {
@@ -46,18 +46,18 @@ public class FaceDetectionController
 	private CheckBox haarClassifier;
 	@FXML
 	private CheckBox lbpClassifier;
-	
+
 	// a timer for acquiring the video stream
 	private ScheduledExecutorService timer;
 	// the OpenCV object that performs the video capture
 	private VideoCapture capture;
 	// a flag to change the button behavior
 	private boolean cameraActive;
-	
+
 	// face cascade classifier
 	private CascadeClassifier faceCascade;
 	private int absoluteFaceSize;
-	
+
 	/**
 	 * Init the controller, at start time
 	 */
@@ -66,36 +66,36 @@ public class FaceDetectionController
 		this.capture = new VideoCapture();
 		this.faceCascade = new CascadeClassifier();
 		this.absoluteFaceSize = 0;
-		
+
 		// set a fixed width for the frame
 		originalFrame.setFitWidth(600);
 		// preserve image ratio
 		originalFrame.setPreserveRatio(true);
 	}
-	
+
 	/**
 	 * The action triggered by pushing the button on the GUI
 	 */
 	@FXML
 	protected void startCamera()
-	{	
+	{
 		if (!this.cameraActive)
 		{
 			// disable setting checkboxes
 			this.haarClassifier.setDisable(true);
 			this.lbpClassifier.setDisable(true);
-			
+
 			// start the video capture
 			this.capture.open(0);
-			
+
 			// is the video stream available?
 			if (this.capture.isOpened())
 			{
 				this.cameraActive = true;
-				
+
 				// grab a frame every 33 ms (30 frames/sec)
 				Runnable frameGrabber = new Runnable() {
-					
+
 					@Override
 					public void run()
 					{
@@ -106,10 +106,10 @@ public class FaceDetectionController
 						updateImageView(originalFrame, imageToShow);
 					}
 				};
-				
+
 				this.timer = Executors.newSingleThreadScheduledExecutor();
 				this.timer.scheduleAtFixedRate(frameGrabber, 0, 33, TimeUnit.MILLISECONDS);
-				
+
 				// update the button content
 				this.cameraButton.setText("Stop Camera");
 			}
@@ -128,21 +128,23 @@ public class FaceDetectionController
 			// enable classifiers checkboxes
 			this.haarClassifier.setDisable(false);
 			this.lbpClassifier.setDisable(false);
-			
+
 			// stop the timer
 			this.stopAcquisition();
 		}
 	}
-	
+
+
+
 	/**
 	 * Get a frame from the opened video stream (if any)
-	 * 
+	 *
 	 * @return the {@link Image} to show
 	 */
 	private Mat grabFrame()
 	{
 		Mat frame = new Mat();
-		
+
 		// check if the capture is open
 		if (this.capture.isOpened())
 		{
@@ -150,14 +152,14 @@ public class FaceDetectionController
 			{
 				// read the current frame
 				this.capture.read(frame);
-				
+
 				// if the frame is not empty, process it
 				if (!frame.empty())
 				{
 					// face detection
 					this.detectAndDisplay(frame);
 				}
-				
+
 			}
 			catch (Exception e)
 			{
@@ -165,13 +167,13 @@ public class FaceDetectionController
 				System.err.println("Exception during the image elaboration: " + e);
 			}
 		}
-		
+
 		return frame;
 	}
-	
+
 	/**
 	 * Method for face detection and tracking
-	 * 
+	 *
 	 * @param frame
 	 *            it looks for faces in this frame
 	 */
@@ -179,33 +181,35 @@ public class FaceDetectionController
 	{
 		MatOfRect faces = new MatOfRect();
 		Mat grayFrame = new Mat();
-		
+
 		// convert the frame in gray scale
 		Imgproc.cvtColor(frame, grayFrame, Imgproc.COLOR_BGR2GRAY);
 		// equalize the frame histogram to improve the result
 		Imgproc.equalizeHist(grayFrame, grayFrame);
-		
+
 		// compute minimum face size (20% of the frame height, in our case)
 		if (this.absoluteFaceSize == 0)
 		{
 			int height = grayFrame.rows();
 			if (Math.round(height * 0.2f) > 0)
+			//if(Math.round(height * 0.2f) > 0 && Math.round(height * 0.5f) < 0.000001)
 			{
 				this.absoluteFaceSize = Math.round(height * 0.2f);
 			}
 		}
-		
+
 		// detect faces
 		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
 				new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
-				
+
 		// each rectangle in faces is a face: draw them!
+
 		Rect[] facesArray = faces.toArray();
 		for (int i = 0; i < facesArray.length; i++)
 			Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
-			
+
 	}
-	
+
 	/**
 	 * The action triggered by selecting the Haar Classifier checkbox. It loads
 	 * the trained set to be used for frontal face detection.
@@ -216,10 +220,11 @@ public class FaceDetectionController
 		// check whether the lpb checkbox is selected and deselect it
 		if (this.lbpClassifier.isSelected())
 			this.lbpClassifier.setSelected(false);
-			
+
 		this.checkboxSelection("resources/haarcascades/haarcascade_frontalface_alt.xml");
+		//this.checkboxSelection("res/haarcascade_eye.xml");
 	}
-	
+
 	/**
 	 * The action triggered by selecting the LBP Classifier checkbox. It loads
 	 * the trained set to be used for frontal face detection.
@@ -230,13 +235,13 @@ public class FaceDetectionController
 		// check whether the haar checkbox is selected and deselect it
 		if (this.haarClassifier.isSelected())
 			this.haarClassifier.setSelected(false);
-			
+
 		this.checkboxSelection("resources/lbpcascades/lbpcascade_frontalface.xml");
 	}
-	
+
 	/**
 	 * Method for loading a classifier trained set from disk
-	 * 
+	 *
 	 * @param classifierPath
 	 *            the path on disk where a classifier trained set is located
 	 */
@@ -244,11 +249,11 @@ public class FaceDetectionController
 	{
 		// load the classifier(s)
 		this.faceCascade.load(classifierPath);
-		
+
 		// now the video capture can start
 		this.cameraButton.setDisable(false);
 	}
-	
+
 	/**
 	 * Stop the acquisition from the camera and release all the resources
 	 */
@@ -268,17 +273,17 @@ public class FaceDetectionController
 				System.err.println("Exception in stopping the frame capture, trying to release the camera now... " + e);
 			}
 		}
-		
+
 		if (this.capture.isOpened())
 		{
 			// release the camera
 			this.capture.release();
 		}
 	}
-	
+
 	/**
 	 * Update the {@link ImageView} in the JavaFX main thread
-	 * 
+	 *
 	 * @param view
 	 *            the {@link ImageView} to update
 	 * @param image
@@ -288,7 +293,7 @@ public class FaceDetectionController
 	{
 		Utils.onFXThread(view.imageProperty(), image);
 	}
-	
+
 	/**
 	 * On application close, stop the acquisition from the camera
 	 */
@@ -296,5 +301,5 @@ public class FaceDetectionController
 	{
 		this.stopAcquisition();
 	}
-	
+
 }
