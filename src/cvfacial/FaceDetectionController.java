@@ -22,6 +22,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
 import utils.Utils;
 
 /**
@@ -44,12 +45,16 @@ public class FaceDetectionController {
 	private ImageView face;
 	@FXML
 	private ImageView spot2;
+	@FXML
+	private ImageView spot3;
+	
 	// checkboxes for enabling/disabling a classifier
 	@FXML
 	private CheckBox haarClassifier;
 	@FXML
 	private CheckBox lbpClassifier;
-
+	@FXML
+	private GridPane grid1;
 	// a timer for acquiring the video stream
 	private ScheduledExecutorService timer;
 	// the OpenCV object that performs the video capture
@@ -62,6 +67,7 @@ public class FaceDetectionController {
 	private int absoluteFaceSize;
 	private Mat head;
 	private Mat spotImage;
+	private Mat spot2Image;
 
 	/**
 	 * Init the controller, at start time
@@ -75,6 +81,10 @@ public class FaceDetectionController {
 		originalFrame.setFitWidth(600);
 		// preserve image ratio
 		originalFrame.setPreserveRatio(true);
+
+		face.fitHeightProperty().bind(grid1.heightProperty().divide(3.1));
+		spot2.fitHeightProperty().bind(grid1.heightProperty().divide(3.1));
+		spot3.fitHeightProperty().bind(grid1.heightProperty().divide(3.1));
 	}
 
 	/**
@@ -101,18 +111,23 @@ public class FaceDetectionController {
 					public void run() {
 						// effectively grab and process a single frame
 						Mat frame = grabFrame();
+						
+					
 						// convert and show the frame
 						Image imageToShow = Utils.mat2Image(frame);
 						updateImageView(originalFrame, imageToShow);
 
 						imageToShow = Utils.mat2Image(head);
 						updateImageView(face, imageToShow);
-						
-						
-						spotImage= head;
+
+						spotImage = head;
 						imageToShow = Utils.mat2Image(spotImage);
 						updateImageView(spot2, imageToShow);
 						
+						spot2Image = head;
+						imageToShow = Utils.mat2Image(spot2Image);
+						updateImageView(spot3, imageToShow);
+
 					}
 				};
 
@@ -198,8 +213,7 @@ public class FaceDetectionController {
 		Rect[] facesArray = faces.toArray();
 		for (int i = 0; i < facesArray.length; i++) {
 			Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
-			
-					
+
 			// Create bounding box of cnt
 			Rect roi = facesArray[i];
 			Mat contourRegion = frame.submat(roi);
